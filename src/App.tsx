@@ -59,12 +59,10 @@ function App() {
 	) => {
 		setForm({ ...form, [event.target.name]: event.target.value });
 	};
-	console.log(form);
 	
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		setError(validateInputs(form));
-		console.log(validateErrors(error));
 		
 		const key = import.meta.env.VITE_BACK_KEY_HEADERS;
 		if (!validateErrors(error)) {
