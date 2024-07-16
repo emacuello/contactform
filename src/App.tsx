@@ -90,7 +90,7 @@ function App() {
 					setIsOpen(true);
 					throw new Error(data);
 				}
-			} catch (error) {
+			} catch (error) {				
 				setLoader(false);
 				console.error(error);
 			}
