@@ -119,7 +119,7 @@ function App() {
 					<path d="M5 12l6 6" />
 					<path d="M5 12l6 -6" />
 				</svg>
-				<a href="https://emacuello-portafolio.vercel.app/">Volver a la pagina principal</a>
+				<a href="https://portafolio.emacuello.com/">Volver a la pagina principal</a>
 			</div>
 
 			<h1 className="text-4xl font-extrabold leading-tight lg:text-6xl cursor-default text-center animate-text-gradient bg-gradient-to-r from-[#b2a8fd] via-[#8678f9] to-[#c7d2fe] bg-[200%_auto] bg-clip-text text-transparent pt-2 pb-5 mb-5">
