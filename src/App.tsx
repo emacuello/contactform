@@ -6,6 +6,7 @@ import {
 } from '@headlessui/react';
 import { useState } from 'react';
 import './App.css';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 function App() {
 	interface Form {
@@ -26,6 +27,7 @@ function App() {
 	const [isOpen, setIsOpen] = useState<boolean>(false);
 	const [loader, setLoader] = useState<boolean>(false);
 	const [errorResponse, setErrorResponse] = useState<string>('');
+	const [token, setToken] = useState<string>('');
 	const api = import.meta.env.VITE_FORM_URL;
 	const validateInputs = (inputs: Form) => {
 		const errors: Form = {
@@ -51,7 +53,26 @@ function App() {
 	const validateErrors = (errors: Form) => {
 		return Object.values(errors).some((error) => error !== '');
 	};
-
+	const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+	const jwtToken = async () => {
+		try {
+			const key = import.meta.env.VITE_BACK_KEY_HEADERS;
+			const fetchResponse = await fetch(`${api}/contact/form-token`, {
+				method: 'POST',
+				headers: {
+					[key!]: import.meta.env.VITE_BACK_VALUE_HEADERS!,
+					'Content-Type': 'application/json',
+				},
+			});
+			if (!fetchResponse.ok) {
+				return false
+			}
+			const data = await fetchResponse.json();
+			return data.token;
+		} catch (error) {
+			return false
+		}
+	}
 	const handleChange = (
 		event:
 			| React.ChangeEvent<HTMLInputElement>
@@ -59,28 +80,40 @@ function App() {
 	) => {
 		setForm({ ...form, [event.target.name]: event.target.value });
 	};
-	
+
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		setError(validateInputs(form));
-		
+		if (!token) {
+			setErrorResponse('Por favor, completa el captcha');
+			setIsOpen(true);
+			return;
+		}
 		const key = import.meta.env.VITE_BACK_KEY_HEADERS;
 		if (!validateErrors(error)) {
 			setLoader(true);
 			try {
+				const jwt = await jwtToken();
+				if (!jwt) {
+					setErrorResponse('Error inesperado, intente de nuevo');
+					setIsOpen(true);
+					return;
+				}
 				const fetchResponse = await fetch(`${api}/contact`, {
 					method: 'POST',
 					headers: {
 						[key!]: import.meta.env.VITE_BACK_VALUE_HEADERS!,
+						'turnstile-response': token,
+						'Authorization': `Bearer ${jwt}`,
 						'Content-Type': 'application/json',
 					},
 					body: JSON.stringify(form),
 				});
-				
-				
+
+
 				const data = await fetchResponse.json();
-				
-				
+
+
 				if (fetchResponse.ok) {
 					setForm({ name: '', email: '', message: '' });
 					setIsOpen(true);
@@ -90,11 +123,14 @@ function App() {
 					setIsOpen(true);
 					throw new Error(data);
 				}
-			} catch (error) {				
+			} catch (error) {
+				setErrorResponse('Error al enviar el formulario');
+				setIsOpen(true);
 				setLoader(false);
 				console.error(error);
 			}
 		} else {
+			setErrorResponse('Por favor, completa todos los campos');
 			setIsOpen(true);
 		}
 	};
@@ -119,7 +155,7 @@ function App() {
 					<path d="M5 12l6 6" />
 					<path d="M5 12l6 -6" />
 				</svg>
-				<a href="https://portafolio.emacuello.com/">Volver a la pagina principal</a>
+				<a href="https://emacuello-portafolio.vercel.app/">Volver a la pagina principal</a>
 			</div>
 
 			<h1 className="text-4xl font-extrabold leading-tight lg:text-6xl cursor-default text-center animate-text-gradient bg-gradient-to-r from-[#b2a8fd] via-[#8678f9] to-[#c7d2fe] bg-[200%_auto] bg-clip-text text-transparent pt-2 pb-5 mb-5">
@@ -245,6 +281,14 @@ function App() {
 							onChange={handleChange}
 							className="w-full rounded-md px-4 border text-sm pt-2.5 outline-[#7456ff]"
 						></textarea>
+						<Turnstile
+							siteKey={SITE_KEY}
+							onSuccess={(token) => setToken(token)}
+							options={{
+								theme: 'dark',
+								language: 'es',
+							}}
+						/>
 						<button
 							type="submit"
 							className={`text-white bg-[#8678f9] hover:bg-[#7456ff] font-semibold rounded-md text-sm px-4 py-2.5 w-full ${loader && 'cursor-not-allowed'}`}
@@ -265,11 +309,11 @@ function App() {
 				</a>
 				<p className="ml-2 text-white">Formulario hecho en React</p>
 			</div>
-			
+
 			<Dialog
 				open={isOpen}
 				onClose={() => setIsOpen(false)}
-				className="relative z-50 text-black"
+				className="relative z-50 text-white"
 			>
 				<div className="fixed inset-0 flex w-screen items-center justify-center p-4">
 					<DialogPanel className="max-w-lg space-y-4 border bg-[#7456FF] p-12">
@@ -279,11 +323,10 @@ function App() {
 								: 'Formulario enviado con éxito!'}
 						</DialogTitle>
 						<Description
-							className={`${
-								validateErrors(form)
-									? 'text-red-900'
-									: 'text-black'
-							} text-base font-semibold`}
+							className={`${validateErrors(form)
+								? 'text-red-900'
+								: 'text-black'
+								} text-base font-semibold`}
 						>
 							{validateErrors(form)
 								? 'No se pudo completar el envío, por favor intenta de nuevo'
