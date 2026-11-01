@@ -1,6 +1,7 @@
 import {
 	Description,
 	Dialog,
+	DialogBackdrop,
 	DialogPanel,
 	DialogTitle,
 } from '@headlessui/react';
@@ -137,7 +138,10 @@ function App() {
 
 	return (
 		<>
-			<div className="flex justify-start pt-2 mt-2 ml-2 font-bold">
+			<a
+				href="https://portafolio.emacuello.dev/"
+				className="inline-flex items-center gap-1 pt-2 mt-2 ml-4 font-bold hover:text-[#8678f9]"
+			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					width="24"
@@ -155,14 +159,14 @@ function App() {
 					<path d="M5 12l6 6" />
 					<path d="M5 12l6 -6" />
 				</svg>
-				<a href="https://emacuello-portafolio.vercel.app/">Volver a la pagina principal</a>
-			</div>
+				Volver a la página principal
+			</a>
 
-			<h1 className="text-4xl font-extrabold leading-tight lg:text-6xl cursor-default text-center animate-text-gradient bg-gradient-to-r from-[#b2a8fd] via-[#8678f9] to-[#c7d2fe] bg-[200%_auto] bg-clip-text text-transparent pt-2 pb-5 mb-5">
+			<h1 className="px-4 text-4xl font-extrabold leading-tight lg:text-6xl cursor-default text-center animate-text-gradient bg-gradient-to-r from-[#b2a8fd] via-[#8678f9] to-[#c7d2fe] bg-[200%_auto] bg-clip-text text-transparent pt-2 pb-5 mb-5">
 				Formulario de contacto
 			</h1>
-			<div className="my-6">
-				<div className="grid sm:grid-cols-2 items-center gap-16 p-8 mx-auto max-w-4xl shadow-[0_2px_10px_-3px_rgba(116,86,255,0.3)] rounded-md text-[#7456FF] font-[sans-serif]">
+			<div className="my-6 px-4">
+				<div className="grid sm:grid-cols-2 items-center gap-10 sm:gap-16 p-6 sm:p-8 mx-auto max-w-4xl shadow-[0_2px_10px_-3px_rgba(116,86,255,0.3)] rounded-md text-[#7456FF] font-[sans-serif]">
 					<div>
 						<h1 className="text-3xl font-extrabold">Hablemos!</h1>
 						<p className="text-sm text-gray-400  mt-3">
@@ -190,9 +194,8 @@ function App() {
 										</svg>
 									</div>
 									<a
-										target="blank"
-										href="mailto:ema.cuello1010@gmail"
-										className="text-[#8678f9] text-sm ml-3"
+										href="mailto:ema.cuello1010@gmail.com"
+										className="text-[#8678f9] text-sm ml-3 break-all"
 									>
 										<small className="block">Mail</small>
 										<strong>
@@ -208,7 +211,9 @@ function App() {
 								<li className="bg-inherit h-10 w-10 rounded-full flex items-center justify-center shrink-0">
 									<a
 										href="https://github.com/emacuello"
-										target="blank"
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="GitHub"
 									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
@@ -231,6 +236,8 @@ function App() {
 									<a
 										href="https://www.linkedin.com/in/vcuellojrs/"
 										target="_blank"
+										rel="noopener noreferrer"
+										aria-label="LinkedIn"
 									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
@@ -251,7 +258,7 @@ function App() {
 					</div>
 
 					<form
-						className="ml-auo space-y-4 text-white font-semibold"
+						className="space-y-4 text-white font-semibold"
 						onSubmit={handleSubmit}
 					>
 						<input
@@ -298,25 +305,27 @@ function App() {
 					</form>
 				</div>
 			</div>
-			<div className="flex items-center justify-center h-16 pt-5 pb-0 mb-0 mt-5 cursor-default">
-				<p className="text-white">Hecho con ❤️ por Emanuel</p>
+			<footer className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-5 mt-5 text-center text-white cursor-default">
+				<p>Hecho con ❤️ por Emanuel</p>
 				<a
 					href="https://github.com/emacuello"
-					target="blank"
-					className="ml-2 text-white hove:text-[#7456FF]"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="hover:text-[#7456FF]"
 				>
-					emacuello © 2024
+					emacuello © {new Date().getFullYear()}
 				</a>
-				<p className="ml-2 text-white">Formulario hecho en React</p>
-			</div>
+				<p>Formulario hecho en React</p>
+			</footer>
 
 			<Dialog
 				open={isOpen}
 				onClose={() => setIsOpen(false)}
 				className="relative z-50 text-white"
 			>
+				<DialogBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
 				<div className="fixed inset-0 flex w-screen items-center justify-center p-4">
-					<DialogPanel className="max-w-lg space-y-4 border bg-[#7456FF] p-12">
+					<DialogPanel className="w-full max-w-lg space-y-4 rounded-xl border border-[#8678f9]/40 bg-[#1a1530] p-6 sm:p-10 shadow-[0_0_30px_-5px_rgba(116,86,255,0.5)]">
 						<DialogTitle className="font-bold text-xl">
 							{validateErrors(form)
 								? 'Error al enviar los datos'
@@ -324,8 +333,8 @@ function App() {
 						</DialogTitle>
 						<Description
 							className={`${validateErrors(form)
-								? 'text-red-900'
-								: 'text-black'
+								? 'text-red-400'
+								: 'text-[#b2a8fd]'
 								} text-base font-semibold`}
 						>
 							{validateErrors(form)
@@ -337,9 +346,9 @@ function App() {
 								? errorResponse
 								: 'Ya recibí tu consulta, en breve te llegará mi respuesta, gracias por contactarme!'}
 						</p>
-						<div className="flex gap-4">
+						<div className="flex justify-end gap-4">
 							<button
-								className="margin-2 text-black bg-[#8678f9] hover:bg-[#7456ff] font-semibold rounded-md text-sm px-4 py-2"
+								className="text-white bg-[#8678f9] hover:bg-[#7456ff] font-semibold rounded-md text-sm px-4 py-2"
 								onClick={() => setIsOpen(false)}
 							>
 								{form.name.length > 0
