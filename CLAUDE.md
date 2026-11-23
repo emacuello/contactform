@@ -32,6 +32,6 @@ Both requests send a custom header whose **name** comes from `VITE_BACK_KEY_HEAD
 
 ### Non-obvious behavior
 
-- The result dialog (headlessui `Dialog`) chooses between success and error with `validateErrors(form)`, which is true when any form field is non-empty. After a successful send the form is reset to empty, so the dialog shows success. On a failure the fields are still filled, so it shows the error and `errorResponse`. Changing how the form resets after a send also changes which message the dialog shows.
-- `handleSubmit` calls `setError(validateInputs(form))` but then checks `validateErrors(error)`, which is the **previous** render's error state. As a result, the client-side validation does not block the current submit (the HTML `required` attributes do most of the work).
+- The result dialog (headlessui `Dialog`) shows the error when `errorResponse` is non-empty and success when it is empty. Every outcome goes through `showResult(message)`; a successful send calls `showResult('')`.
+- Turnstile tokens are single-use. `handleSubmit` clears `token` and calls `turnstileRef.current?.reset()` in `finally`, so every attempt (success or failure) gets a fresh token. `onError` and `onExpire` also clear it, which blocks a submit with a dead token.
 - In `tailwind.config.js`, `theme.animation` and `theme.keyframes` sit outside `extend`, so they **replace** Tailwind's default animations (`animate-spin`, `animate-pulse` and so on don't exist). The `text-gradient` animation is inside `extend`.

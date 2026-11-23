@@ -5,9 +5,9 @@ import {
 	DialogPanel,
 	DialogTitle,
 } from '@headlessui/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import './App.css';
-import { Turnstile } from '@marsidev/react-turnstile';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 
 function App() {
 	interface Form {
@@ -20,15 +20,11 @@ function App() {
 		email: '',
 		message: '',
 	});
-	const [error, setError] = useState<Form>({
-		name: '',
-		email: '',
-		message: '',
-	});
 	const [isOpen, setIsOpen] = useState<boolean>(false);
 	const [loader, setLoader] = useState<boolean>(false);
 	const [errorResponse, setErrorResponse] = useState<string>('');
 	const [token, setToken] = useState<string>('');
+	const turnstileRef = useRef<TurnstileInstance>();
 	const api = import.meta.env.VITE_FORM_URL;
 	const validateInputs = (inputs: Form) => {
 		const errors: Form = {
@@ -82,57 +78,53 @@ function App() {
 		setForm({ ...form, [event.target.name]: event.target.value });
 	};
 
+	// El diálogo muestra error si errorResponse no está vacío y éxito si lo está.
+	const showResult = (message: string) => {
+		setErrorResponse(message);
+		setIsOpen(true);
+	};
+
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setError(validateInputs(form));
+		if (loader) return;
+		if (validateErrors(validateInputs(form))) {
+			return showResult('Por favor, completa todos los campos');
+		}
 		if (!token) {
-			setErrorResponse('Por favor, completa el captcha');
-			setIsOpen(true);
-			return;
+			return showResult('Por favor, completa el captcha');
 		}
 		const key = import.meta.env.VITE_BACK_KEY_HEADERS;
-		if (!validateErrors(error)) {
-			setLoader(true);
-			try {
-				const jwt = await jwtToken();
-				if (!jwt) {
-					setErrorResponse('Error inesperado, intente de nuevo');
-					setIsOpen(true);
-					return;
-				}
-				const fetchResponse = await fetch(`${api}/contact`, {
-					method: 'POST',
-					headers: {
-						[key!]: import.meta.env.VITE_BACK_VALUE_HEADERS!,
-						'turnstile-response': token,
-						'Authorization': `Bearer ${jwt}`,
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(form),
-				});
-
-
-				const data = await fetchResponse.json();
-
-
-				if (fetchResponse.ok) {
-					setForm({ name: '', email: '', message: '' });
-					setIsOpen(true);
-					setLoader(false);
-				} else {
-					setErrorResponse(await data.message);
-					setIsOpen(true);
-					throw new Error(data);
-				}
-			} catch (error) {
-				setErrorResponse('Error al enviar el formulario');
-				setIsOpen(true);
-				setLoader(false);
-				console.error(error);
+		setLoader(true);
+		try {
+			const jwt = await jwtToken();
+			if (!jwt) {
+				return showResult('Error inesperado, intente de nuevo');
 			}
-		} else {
-			setErrorResponse('Por favor, completa todos los campos');
-			setIsOpen(true);
+			const fetchResponse = await fetch(`${api}/contact`, {
+				method: 'POST',
+				headers: {
+					[key!]: import.meta.env.VITE_BACK_VALUE_HEADERS!,
+					'turnstile-response': token,
+					'Authorization': `Bearer ${jwt}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(form),
+			});
+			if (fetchResponse.ok) {
+				setForm({ name: '', email: '', message: '' });
+				return showResult('');
+			}
+			const data = await fetchResponse.json().catch(() => ({}));
+			const message = Array.isArray(data.message) ? data.message.join(', ') : data.message;
+			showResult(message || 'Error al enviar el formulario');
+		} catch (error) {
+			console.error(error);
+			showResult('Error al enviar el formulario');
+		} finally {
+			// El token de Turnstile es de un solo uso: se pide uno nuevo después de cada intento.
+			setLoader(false);
+			setToken('');
+			turnstileRef.current?.reset();
 		}
 	};
 
@@ -289,8 +281,11 @@ function App() {
 							className="w-full rounded-md px-4 border text-sm pt-2.5 outline-[#7456ff]"
 						></textarea>
 						<Turnstile
+							ref={turnstileRef}
 							siteKey={SITE_KEY}
 							onSuccess={(token) => setToken(token)}
+							onError={() => setToken('')}
+							onExpire={() => setToken('')}
 							options={{
 								theme: 'dark',
 								language: 'es',
@@ -327,22 +322,22 @@ function App() {
 				<div className="fixed inset-0 flex w-screen items-center justify-center p-4">
 					<DialogPanel className="w-full max-w-lg space-y-4 rounded-xl border border-[#8678f9]/40 bg-[#1a1530] p-6 sm:p-10 shadow-[0_0_30px_-5px_rgba(116,86,255,0.5)]">
 						<DialogTitle className="font-bold text-xl">
-							{validateErrors(form)
+							{errorResponse
 								? 'Error al enviar los datos'
 								: 'Formulario enviado con éxito!'}
 						</DialogTitle>
 						<Description
-							className={`${validateErrors(form)
+							className={`${errorResponse
 								? 'text-red-400'
 								: 'text-[#b2a8fd]'
 								} text-base font-semibold`}
 						>
-							{validateErrors(form)
+							{errorResponse
 								? 'No se pudo completar el envío, por favor intenta de nuevo'
 								: 'Gracias por completar el formulario'}
 						</Description>
 						<p className="text-base">
-							{validateErrors(form)
+							{errorResponse
 								? errorResponse
 								: 'Ya recibí tu consulta, en breve te llegará mi respuesta, gracias por contactarme!'}
 						</p>
@@ -351,7 +346,7 @@ function App() {
 								className="text-white bg-[#8678f9] hover:bg-[#7456ff] font-semibold rounded-md text-sm px-4 py-2"
 								onClick={() => setIsOpen(false)}
 							>
-								{form.name.length > 0
+								{errorResponse
 									? 'Lo entiendo 😞'
 									: 'Cerrar'}
 							</button>
